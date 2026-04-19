@@ -19,6 +19,8 @@ with st.sidebar:
         st.switch_page("pages/2_Home.py")
     if st.button("👶 Child Profile", use_container_width=True):
         st.switch_page("pages/3_Child_Profile.py")
+    if st.button("📝 Observations", use_container_width=True):
+        st.switch_page("pages/3b_Observations.py")
     if st.button("💬 AI Chat", use_container_width=True):
         st.switch_page("pages/4_AI_Chat.py")
     if st.button("📊 Progress", use_container_width=True):
