@@ -29,11 +29,13 @@ def build_context_prompt(child, observations, style_profile, user_message):
     child_name = child.get("name", "your child")
     age = child.get("age", "unknown")
 
-    obs_text = ""
     if observations:
-        obs_text = "\n".join([f"- {o['observation_text'][:200]}" for o in observations[:3]])
+        obs_text = "\n".join([
+            f"- [{o['submitted_at'].strftime('%d %b %Y')}]: {o['observation_text'][:300]}"
+            for o in observations
+        ])
     else:
-        obs_text = "No observations recorded yet."
+        obs_text = "No observations recorded yet. Give general guidance based on focus areas."
 
     tone = style_profile.get("tone", "neutral")
     formality = style_profile.get("formality", "semi-formal")
@@ -45,20 +47,24 @@ CHILD PROFILE:
 - Age: {age}
 - Focus Areas: {focus_areas}
 
-RECENT OBSERVATIONS FROM CAREGIVER:
+RECENT CAREGIVER OBSERVATIONS (most recent first):
 {obs_text}
 
-COMMUNICATION STYLE:
-- Tone detected: {tone}
-- Formality level: {formality}
-- Please match this style in your response.
+COMMUNICATION STYLE DETECTED:
+- Tone: {tone}
+- Formality: {formality}
+- Please match this style naturally in your response.
 
 CAREGIVER MESSAGE:
 {user_message}
 
-Respond in a warm, supportive way that is personalised to {child_name}'s profile 
-and focus areas. Keep your response concise and practical. 
-Do not provide any diagnostic conclusions."""
+Instructions:
+- Reference specific details from the observations above to show you understand this child's situation
+- Give practical, actionable suggestions tailored to {child_name}'s focus areas
+- Match the caregiver's detected tone and formality
+- Be warm, encouraging and non-judgmental
+- Never provide diagnostic conclusions or replace professional advice
+- Keep response concise and easy to read"""
 
     return prompt
 
@@ -73,7 +79,6 @@ def analyse_style(messages):
 
     casual_count = sum(1 for w in casual_words if w in all_text.lower())
     formal_count = sum(1 for w in formal_words if w in all_text.lower())
-
     formality = "casual" if casual_count > formal_count else "semi-formal"
 
     concern_words = ["worried", "struggle", "hard", "difficult", "help", "problem"]
@@ -91,36 +96,6 @@ def analyse_style(messages):
 
     return {"tone": tone, "formality": formality}
 
-def get_mock_response(child, user_message, style_profile):
-    child_name = child.get("name", "your child")
-    focus_areas = child.get("focus_areas", [])
-    tone = style_profile.get("tone", "neutral")
-
-    greeting = "I understand your concern." if tone == "concerned" else "That's wonderful to hear!"
-
-    suggestions = {
-        "Communication": f"Try using visual schedules or picture cards to help {child_name} express their needs more clearly.",
-        "Social Interaction": f"Short, structured playdates with one familiar peer can help {child_name} practise social skills in a safe environment.",
-        "Behaviour": f"Consistent routines and clear expectations can help {child_name} feel more secure and reduce challenging behaviours.",
-        "Sensory": f"Consider creating a calm corner at home where {child_name} can retreat when feeling overwhelmed.",
-        "Emotional Regulation": f"Emotion cards or a feelings chart can help {child_name} identify and communicate their emotions."
-    }
-
-    relevant = [suggestions[f] for f in focus_areas if f in suggestions]
-    suggestion_text = relevant[0] if relevant else f"Keep engaging with {child_name} through play-based activities they enjoy."
-
-    response = f"""{greeting}
-
-Based on what you've shared about {child_name}, here's my suggestion:
-
-{suggestion_text}
-
-Remember, every child progresses at their own pace. You're doing a great job by staying engaged and observant.
-
-*Please note: AutiSense is a support tool and does not replace professional therapy or medical advice.*"""
-
-    return response
-
 def save_interaction(child_id, user_message, ai_response):
     interactions = get_interactions_collection()
     interactions.insert_one({
@@ -134,11 +109,34 @@ def save_interaction(child_id, user_message, ai_response):
 def get_ai_response(child, user_message, chat_history, style_profile):
     try:
         import streamlit as st
+        from observations import get_child_observations
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        observations = []
+
+        # Fetch real observations
+        observations = get_child_observations(child["child_id"], limit=5)
+
+        # Fetch recent interaction summaries
+        recent_interactions = list(get_interactions_collection().find(
+            {"child_id": child["child_id"]},
+            sort=[("created_at", -1)],
+            limit=3
+        ))
+
+        # Build contextual prompt
         prompt = build_context_prompt(child, observations, style_profile, user_message)
+
+        # Add recent interaction context
+        if recent_interactions:
+            interaction_context = "\n".join([
+                f"- {i['user_message_summary']}"
+                for i in recent_interactions
+            ])
+            prompt += f"\n\nRECENT CONVERSATION TOPICS:\n{interaction_context}\nUse this to maintain continuity and avoid repeating advice already given."
+
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
         return response.text
+
     except Exception as e:
-        return f"DEBUG ERROR: {str(e)}"
+        # Show a friendly error message instead of crashing
+        return f"I'm sorry, I'm having trouble connecting right now. Please try again in a moment. If the issue persists, please refresh the page.\n\n*(Error: {str(e)})*"
