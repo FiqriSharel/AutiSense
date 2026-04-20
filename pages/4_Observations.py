@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from observations import submit_observation, get_child_observations, get_progress_record
-from sidebar import render_sidebar
+from streamlit_option_menu import option_menu
 
 st.set_page_config(page_title="AutiSense - Observations", page_icon="🌿", layout="wide")
 
@@ -11,7 +11,42 @@ if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
 user = st.session_state.user
-render_sidebar(user)
+
+with st.sidebar:
+    st.markdown("### AutiSense")
+    st.markdown(f"<small>Logged in as <b>{user['email']}</b></small>", unsafe_allow_html=True)
+    st.markdown("---")
+    selected = option_menu(
+        menu_title=None,
+        options=["Home", "Child Profile", "Observations", "AI Chat", "Progress"],
+        icons=["house", "person", "pencil", "chat-dots", "bar-chart"],
+        default_index=2,
+        styles={
+            "container": {"padding": "0", "background-color": "transparent"},
+            "icon": {"color": "#A8D8CE", "font-size": "16px"},
+            "nav-link": {
+                "font-size": "14px", "text-align": "left",
+                "margin": "2px 0", "padding": "8px 12px",
+                "border-radius": "8px", "color": "#C8E6E0",
+            },
+            "nav-link-selected": {
+                "background-color": "#2D7D6F", "color": "white", "font-weight": "500",
+            },
+        }
+    )
+    st.markdown("---")
+    if st.button("Logout", use_container_width=True):
+        st.session_state.user = None
+        st.switch_page("pages/1_Login.py")
+
+if selected == "Home":
+    st.switch_page("pages/2_Home.py")
+elif selected == "Child Profile":
+    st.switch_page("pages/3_Child_Profile.py")
+elif selected == "AI Chat":
+    st.switch_page("pages/5_AI_Chat.py")
+elif selected == "Progress":
+    st.switch_page("pages/6_Progress.py")
 
 st.markdown("<h2 style='color:#2D7D6F;'>Observations</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Record your child's daily behaviours and interactions.</p>", unsafe_allow_html=True)
@@ -56,7 +91,6 @@ with tab1:
             if success:
                 st.toast("Observation saved!")
                 st.success(msg)
-                # Show updated score
                 record = get_progress_record(selected_child["child_id"])
                 if record:
                     st.info(f"Progress level updated: **{record['progress_level']}** (Score: {record['composite_score']}/100)")

@@ -3,7 +3,8 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from observations import get_progress_record, get_child_observations
-from sidebar import render_sidebar
+from streamlit_option_menu import option_menu
+from streamlit_extras.metric_cards import style_metric_cards
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -15,7 +16,42 @@ if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
 user = st.session_state.user
-render_sidebar(user)
+
+with st.sidebar:
+    st.markdown("### AutiSense")
+    st.markdown(f"<small>Logged in as <b>{user['email']}</b></small>", unsafe_allow_html=True)
+    st.markdown("---")
+    selected = option_menu(
+        menu_title=None,
+        options=["Home", "Child Profile", "Observations", "AI Chat", "Progress"],
+        icons=["house", "person", "pencil", "chat-dots", "bar-chart"],
+        default_index=4,
+        styles={
+            "container": {"padding": "0", "background-color": "transparent"},
+            "icon": {"color": "#A8D8CE", "font-size": "16px"},
+            "nav-link": {
+                "font-size": "14px", "text-align": "left",
+                "margin": "2px 0", "padding": "8px 12px",
+                "border-radius": "8px", "color": "#C8E6E0",
+            },
+            "nav-link-selected": {
+                "background-color": "#2D7D6F", "color": "white", "font-weight": "500",
+            },
+        }
+    )
+    st.markdown("---")
+    if st.button("Logout", use_container_width=True):
+        st.session_state.user = None
+        st.switch_page("pages/1_Login.py")
+
+if selected == "Home":
+    st.switch_page("pages/2_Home.py")
+elif selected == "Child Profile":
+    st.switch_page("pages/3_Child_Profile.py")
+elif selected == "Observations":
+    st.switch_page("pages/4_Observations.py")
+elif selected == "AI Chat":
+    st.switch_page("pages/5_AI_Chat.py")
 
 st.markdown("<h2 style='color:#2D7D6F;'>Progress Dashboard</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Track your child's engagement and progress over time.</p>", unsafe_allow_html=True)
@@ -40,49 +76,36 @@ if not record:
         st.switch_page("pages/4_Observations.py")
     st.stop()
 
-# Current progress badge
 level = record.get("progress_level", "Low")
 score = record.get("composite_score", 0)
 valid_obs = record.get("valid_observations", 0)
 active_weeks = record.get("active_weeks", 0)
 
-badge_colors = {
-    "Low": ("#FFF3CD", "#856404", "Limited engagement trend"),
-    "Medium": ("#D1ECF1", "#0C5460", "Moderate and emerging consistency"),
-    "High": ("#D4EDDA", "#155724", "Sustained and consistent engagement")
+level_interpretations = {
+    "Low": "Limited engagement trend",
+    "Medium": "Moderate and emerging consistency",
+    "High": "Sustained and consistent engagement",
 }
-bg, fg, interpretation = badge_colors[level]
+interpretation = level_interpretations.get(level, "")
 
-# Summary cards
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown(f"""
-        <div style='background:{bg}; padding:1.5rem; border-radius:12px; text-align:center;'>
-            <h2 style='color:{fg}; margin:0;'>{level}</h2>
-            <p style='color:{fg}; margin:0; font-size:0.85rem;'>Current Progress Level</p>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.metric(label="Progress Level", value=level)
 with col2:
-    st.markdown(f"""
-        <div style='background:#E8F5F2; padding:1.5rem; border-radius:12px; text-align:center;'>
-            <h2 style='color:#2D7D6F; margin:0;'>{valid_obs}</h2>
-            <p style='color:#555; margin:0; font-size:0.85rem;'>Observations Recorded</p>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.metric(label="Observations Recorded", value=valid_obs)
 with col3:
-    st.markdown(f"""
-        <div style='background:#E8F5F2; padding:1.5rem; border-radius:12px; text-align:center;'>
-            <h2 style='color:#2D7D6F; margin:0;'>{active_weeks}</h2>
-            <p style='color:#555; margin:0; font-size:0.85rem;'>Active Weeks</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.metric(label="Active Weeks", value=active_weeks)
 
-st.markdown(f"<p style='color:#555; margin-top:1rem;'>Interpretation: <b>{interpretation}</b></p>", unsafe_allow_html=True)
+style_metric_cards(
+    background_color="#E8F5F2",
+    border_left_color="#2D7D6F",
+    border_color="#C2D8D4",
+    box_shadow=False,
+)
+
+st.markdown(f"<p style='color:#555; margin-top:0.5rem;'>Interpretation: <b>{interpretation}</b></p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Progress graph
 score_history = record.get("score_history", [])
 
 if len(score_history) < 2:
@@ -98,35 +121,28 @@ else:
     fig.patch.set_facecolor("#0E1117")
     ax.set_facecolor("#0E1117")
 
-    # Plot score line
     ax.plot(dates, scores, color="#2D7D6F", linewidth=2.5, marker="o", markersize=6, zorder=3)
 
-    # Fill areas for each band
     ax.fill_between(dates, 0, 39, alpha=0.08, color="#FFC107", label="_nolegend_")
     ax.fill_between(dates, 40, 69, alpha=0.08, color="#17A2B8", label="_nolegend_")
     ax.fill_between(dates, 70, 100, alpha=0.08, color="#28A745", label="_nolegend_")
 
-    # Dotted band dividers
     ax.axhline(y=40, color="#FFC107", linestyle="--", linewidth=1, alpha=0.6, zorder=2)
     ax.axhline(y=70, color="#28A745", linestyle="--", linewidth=1, alpha=0.6, zorder=2)
 
-    # Y axis labels — only show Low, Medium, High
     ax.set_yticks([20, 55, 85])
     ax.set_yticklabels(["Low", "Medium", "High"], color="white", fontsize=12)
     ax.set_ylim(0, 100)
 
-    # X axis
     ax.tick_params(axis="x", colors="white", labelsize=9)
     ax.tick_params(axis="y", colors="white")
 
-    # Grid and spines
     ax.grid(axis="x", linestyle="--", alpha=0.2, color="white")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_color("#444")
     ax.spines["bottom"].set_color("#444")
 
-    # Legend patches
     low_patch = mpatches.Patch(color="#FFC107", alpha=0.4, label="Low (0-39)")
     med_patch = mpatches.Patch(color="#17A2B8", alpha=0.4, label="Medium (40-69)")
     high_patch = mpatches.Patch(color="#28A745", alpha=0.4, label="High (70-100)")
@@ -139,10 +155,6 @@ else:
 
 st.markdown("---")
 
-# Intervention suggestions based on progress level
-st.markdown("---")
-
-# Intervention suggestions via AI Chat
 st.markdown("### Get Personalised Activity Suggestions")
 st.markdown("<p style='color:#555;'>Based on your child's current progress level, AutiSense can suggest personalised activities tailored to their focus areas.</p>", unsafe_allow_html=True)
 
