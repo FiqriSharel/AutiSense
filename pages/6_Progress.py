@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from observations import get_progress_record, get_child_observations
+from sidebar import render_sidebar
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -14,27 +15,9 @@ if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
 user = st.session_state.user
+render_sidebar(user)
 
-with st.sidebar:
-    st.markdown("### 🌿 AutiSense")
-    st.markdown(f"Logged in as **{user['email']}**")
-    st.markdown("---")
-    if st.button("🏠 Home", use_container_width=True):
-        st.switch_page("pages/2_Home.py")
-    if st.button("👶 Child Profile", use_container_width=True):
-        st.switch_page("pages/3_Child_Profile.py")
-    if st.button("📝 Observations", use_container_width=True):
-        st.switch_page("pages/3b_Observations.py")
-    if st.button("💬 AI Chat", use_container_width=True):
-        st.switch_page("pages/4_AI_Chat.py")
-    if st.button("📊 Progress", use_container_width=True):
-        st.switch_page("pages/5_Progress.py")
-    st.markdown("---")
-    if st.button("Logout", use_container_width=True):
-        st.session_state.user = None
-        st.switch_page("pages/1_Login.py")
-
-st.markdown("<h2 style='color:#2D7D6F;'>📊 Progress Dashboard</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#2D7D6F;'>Progress Dashboard</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Track your child's engagement and progress over time.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
@@ -54,7 +37,7 @@ record = get_progress_record(selected_child["child_id"])
 if not record:
     st.info("No progress data yet. Start by submitting observations!")
     if st.button("Go to Observations"):
-        st.switch_page("pages/3b_Observations.py")
+        st.switch_page("pages/4_Observations.py")
     st.stop()
 
 # Current progress badge
@@ -160,7 +143,7 @@ st.markdown("---")
 st.markdown("---")
 
 # Intervention suggestions via AI Chat
-st.markdown("### 💡 Get Personalised Activity Suggestions")
+st.markdown("### Get Personalised Activity Suggestions")
 st.markdown("<p style='color:#555;'>Based on your child's current progress level, AutiSense can suggest personalised activities tailored to their focus areas.</p>", unsafe_allow_html=True)
 
 focus_areas = selected_child.get("focus_areas", [])
@@ -179,9 +162,9 @@ with col1:
     """, unsafe_allow_html=True)
 
 with col2:
-    if st.button("💬 Ask AutiSense for suggestions", use_container_width=True, type="primary"):
+    if st.button("Ask AutiSense for suggestions", use_container_width=True, type="primary"):
         st.session_state.starter_message = suggestion_prompt
-        st.switch_page("pages/4_AI_Chat.py")
+        st.switch_page("pages/5_AI_Chat.py")
 
 st.markdown("---")
 st.markdown("<small style='color:#888;'>⚠️ These suggestions are for support purposes only and do not constitute clinical advice. Please consult a qualified professional for personalised therapy.</small>", unsafe_allow_html=True)

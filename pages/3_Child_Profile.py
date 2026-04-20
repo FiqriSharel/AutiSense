@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from children import create_child_profile, get_user_children, update_child_profile, delete_child_profile, FOCUS_AREAS
+from sidebar import render_sidebar
 
 st.set_page_config(page_title="AutiSense - Child Profile", page_icon="🌿", layout="wide")
 
@@ -11,46 +12,28 @@ if "user" not in st.session_state or not st.session_state.user:
 
 user = st.session_state.user
 user_id = user["user_id"]
+render_sidebar(user)
 
-with st.sidebar:
-    st.markdown("### 🌿 AutiSense")
-    st.markdown(f"Logged in as **{user['email']}**")
-    st.markdown("---")
-    if st.button("🏠 Home", use_container_width=True):
-        st.switch_page("pages/2_Home.py")
-    if st.button("👶 Child Profile", use_container_width=True):
-        st.switch_page("pages/3_Child_Profile.py")
-    if st.button("💬 AI Chat", use_container_width=True):
-        st.switch_page("pages/4_AI_Chat.py")
-    if st.button("📊 Progress", use_container_width=True):
-        st.switch_page("pages/5_Progress.py")
-    st.markdown("---")
-    if st.button("📝 Observations", use_container_width=True):
-        st.switch_page("pages/3b_Observations.py")
-    if st.button("Logout", use_container_width=True):
-        st.session_state.user = None
-        st.switch_page("pages/1_Login.py")
-
-st.markdown("<h2 style='color:#2D7D6F;'>👶 Child Profile</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#2D7D6F;'>Child Profile</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Manage your child's profile and focus areas.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 # Show success toast if just created
 if st.session_state.get("child_just_created"):
     child_name = st.session_state.get("child_just_created_name", "your child")
-    st.toast(f"🎉 Profile for {child_name} created successfully!", icon="✅")
+    st.toast(f"Profile for {child_name} created successfully!")
     st.session_state.child_just_created = False
 
 children = get_user_children(user_id)
 
-tab1, tab2 = st.tabs(["👶 My Children", "➕ Add New Child"])
+tab1, tab2 = st.tabs(["My Children", "Add New Child"])
 
 with tab1:
     if not children:
         st.info("No child profiles yet. Go to 'Add New Child' to create one!")
     else:
         for child in children:
-            with st.expander(f"👶 {child['name']} — Age {child['age']}"):
+            with st.expander(f"{child['name']} — Age {child['age']}"):
                 col1, col2 = st.columns([3, 1])
                 with col1:
                     st.markdown(f"**Focus Areas:** {', '.join(child['focus_areas'])}")

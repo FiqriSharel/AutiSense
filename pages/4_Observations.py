@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from observations import submit_observation, get_child_observations, get_progress_record
+from sidebar import render_sidebar
 
 st.set_page_config(page_title="AutiSense - Observations", page_icon="🌿", layout="wide")
 
@@ -10,27 +11,9 @@ if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
 user = st.session_state.user
+render_sidebar(user)
 
-with st.sidebar:
-    st.markdown("### 🌿 AutiSense")
-    st.markdown(f"Logged in as **{user['email']}**")
-    st.markdown("---")
-    if st.button("🏠 Home", use_container_width=True):
-        st.switch_page("pages/2_Home.py")
-    if st.button("👶 Child Profile", use_container_width=True):
-        st.switch_page("pages/3_Child_Profile.py")
-    if st.button("📝 Observations", use_container_width=True):
-        st.switch_page("pages/3b_Observations.py")
-    if st.button("💬 AI Chat", use_container_width=True):
-        st.switch_page("pages/4_AI_Chat.py")
-    if st.button("📊 Progress", use_container_width=True):
-        st.switch_page("pages/5_Progress.py")
-    st.markdown("---")
-    if st.button("Logout", use_container_width=True):
-        st.session_state.user = None
-        st.switch_page("pages/1_Login.py")
-
-st.markdown("<h2 style='color:#2D7D6F;'>📝 Observations</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#2D7D6F;'>Observations</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Record your child's daily behaviours and interactions.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
@@ -45,7 +28,7 @@ st.markdown(f"### Recording observation for: **{selected_child['name']}**")
 st.markdown(f"Focus areas: {', '.join(selected_child['focus_areas'])}")
 st.markdown("---")
 
-tab1, tab2 = st.tabs(["📝 New Observation", "📋 Past Observations"])
+tab1, tab2 = st.tabs(["New Observation", "Past Observations"])
 
 with tab1:
     st.markdown("#### What did you observe today?")
@@ -71,7 +54,7 @@ with tab1:
         else:
             success, msg = submit_observation(selected_child["child_id"], observation_text)
             if success:
-                st.toast("✅ Observation saved!", icon="📝")
+                st.toast("Observation saved!")
                 st.success(msg)
                 # Show updated score
                 record = get_progress_record(selected_child["child_id"])

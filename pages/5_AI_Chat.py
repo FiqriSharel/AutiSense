@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from ai_chat import get_ai_response, analyse_style, save_interaction
 from observations import get_child_observations
+from sidebar import render_sidebar
 
 st.set_page_config(page_title="AutiSense - AI Chat", page_icon="🌿", layout="wide")
 
@@ -11,27 +12,9 @@ if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
 user = st.session_state.user
+render_sidebar(user)
 
-with st.sidebar:
-    st.markdown("### 🌿 AutiSense")
-    st.markdown(f"Logged in as **{user['email']}**")
-    st.markdown("---")
-    if st.button("🏠 Home", use_container_width=True):
-        st.switch_page("pages/2_Home.py")
-    if st.button("👶 Child Profile", use_container_width=True):
-        st.switch_page("pages/3_Child_Profile.py")
-    if st.button("📝 Observations", use_container_width=True):
-        st.switch_page("pages/3b_Observations.py")
-    if st.button("💬 AI Chat", use_container_width=True):
-        st.switch_page("pages/4_AI_Chat.py")
-    if st.button("📊 Progress", use_container_width=True):
-        st.switch_page("pages/5_Progress.py")
-    st.markdown("---")
-    if st.button("Logout", use_container_width=True):
-        st.session_state.user = None
-        st.switch_page("pages/1_Login.py")
-
-st.markdown("<h2 style='color:#2D7D6F;'>💬 AI Chat</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#2D7D6F;'>AI Chat</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Get personalised intervention guidance for your child.</p>", unsafe_allow_html=True)
 
 st.warning("⚠️ AutiSense is a support tool only and does not provide medical diagnoses. Always consult a qualified professional for clinical advice.")
@@ -115,6 +98,6 @@ if user_input:
 # Clear chat button
 if st.session_state.chat_history:
     st.markdown("---")
-    if st.button("🔄 Start New Session", type="secondary"):
+    if st.button("Start New Session", type="secondary"):
         st.session_state.chat_history = []
         st.rerun()
