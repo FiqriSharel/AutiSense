@@ -41,7 +41,7 @@ with tab1:
                 with col2:
                     if st.button("Select", key=f"select_{child['child_id']}"):
                         st.session_state.selected_child = child
-                        st.success(f"Selected: {child['name']}")
+                        st.switch_page("pages/2_Home.py")
 
                 st.markdown("##### Edit Profile")
                 new_name = st.text_input("Name", value=child["name"], key=f"name_{child['child_id']}")
@@ -104,7 +104,7 @@ with tab2:
                 st.session_state.child_just_created = True
                 st.session_state.child_just_created_name = name
                 st.session_state.creating_profile = False
-                st.switch_page("pages/3_Child_Profile.py")
+                st.switch_page("pages/2_Home.py")
             else:
                 st.session_state.creating_profile = False
                 st.error(msg)
