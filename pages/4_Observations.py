@@ -10,19 +10,16 @@ st.set_page_config(page_title="AutiSense - Observations", page_icon="🌿", layo
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
+if not st.session_state.get("selected_child"):
+    st.switch_page("pages/3_Child_Profile.py")
+
 user = st.session_state.user
+selected_child = st.session_state.selected_child
 render_sidebar(user)
 
 st.markdown("<h2 style='color:#2D7D6F;'>Observations</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Record your child's daily behaviours and interactions.</p>", unsafe_allow_html=True)
 st.markdown("---")
-
-selected_child = st.session_state.get("selected_child")
-if not selected_child:
-    st.warning("No child selected. Please select a child profile first.")
-    if st.button("Go to Child Profile"):
-        st.switch_page("pages/3_Child_Profile.py")
-    st.stop()
 
 st.markdown(f"### Recording observation for: **{selected_child['name']}**")
 st.markdown(f"Focus areas: {', '.join(selected_child['focus_areas'])}")

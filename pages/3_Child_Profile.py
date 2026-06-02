@@ -14,14 +14,38 @@ user = st.session_state.user
 user_id = user["user_id"]
 render_sidebar(user)
 
+st.markdown("""
+<style>
+/* Select button — darker slate grey with white text */
+div:has([id^="select-btn-marker"]) + div .stButton > button {
+    background: #475569 !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.18) !important;
+    transition: background 0.15s, box-shadow 0.15s !important;
+}
+div:has([id^="select-btn-marker"]) + div .stButton > button:hover {
+    background: #334155 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.22) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.markdown("<h2 style='color:#2D7D6F;'>Child Profile</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Manage your child's profile and focus areas.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Show success toast if just created
+# Success banner after profile creation
 if st.session_state.get("child_just_created"):
     child_name = st.session_state.get("child_just_created_name", "your child")
-    st.toast(f"Profile for {child_name} created successfully!")
+    st.markdown(f"""
+        <div style="background:#d1fae5; border:1px solid #6ee7b7; border-left:4px solid #10b981;
+                    border-radius:8px; padding:0.85rem 1.1rem; color:#065f46;
+                    font-size:0.95rem; font-weight:500; margin-bottom:0.5rem;">
+            Profile for <b>{child_name}</b> created successfully!
+        </div>
+    """, unsafe_allow_html=True)
     st.session_state.child_just_created = False
 
 children = get_user_children(user_id)
@@ -39,9 +63,12 @@ with tab1:
                     st.markdown(f"**Focus Areas:** {', '.join(child['focus_areas'])}")
                     st.markdown(f"**Created:** {child['created_at'].strftime('%d %b %Y')}")
                 with col2:
+                    st.markdown(f'<span id="select-btn-marker-{child["child_id"]}"></span>',
+                                unsafe_allow_html=True)
                     if st.button("Select", key=f"select_{child['child_id']}"):
                         st.session_state.selected_child = child
-                        st.success(f"Selected: {child['name']}")
+                        st.session_state.child_just_selected_name = child["name"]
+                        st.switch_page("pages/2_Home.py")
 
                 st.markdown("##### Edit Profile")
                 new_name = st.text_input("Name", value=child["name"], key=f"name_{child['child_id']}")
@@ -68,23 +95,24 @@ with tab1:
 with tab2:
     st.markdown("### Add a new child profile")
 
-    name = st.text_input("Child's name")
-    age = st.text_input("Child's age", placeholder="e.g. 7")
-    focus_areas = st.multiselect(
-        "Focus areas",
-        FOCUS_AREAS,
-        help="Select the areas you'd like AutiSense to focus on"
-    )
+    with st.form("new_child_form", clear_on_submit=True):
+        name = st.text_input("Child's name")
+        age = st.text_input("Child's age", placeholder="e.g. 7")
+        focus_areas = st.multiselect(
+            "Focus areas",
+            FOCUS_AREAS,
+            help="Select the areas you'd like AutiSense to focus on"
+        )
+        st.markdown("""
+            <small style='color:#888;'>
+            AutiSense uses this information to personalise guidance for your child.
+            This is not a diagnostic tool — please consult a professional for clinical advice.
+            </small>
+        """, unsafe_allow_html=True)
+        st.markdown("")
+        submitted = st.form_submit_button("Create Profile", use_container_width=True)
 
-    st.markdown("""
-        <small style='color:#888;'>
-        AutiSense uses this information to personalise guidance for your child.
-        This is not a diagnostic tool — please consult a professional for clinical advice.
-        </small>
-    """, unsafe_allow_html=True)
-    st.markdown("")
-
-    if st.button("Create Profile", use_container_width=True, disabled=st.session_state.get("creating_profile", False)):
+    if submitted:
         if not name:
             st.error("Please enter your child's name.")
         elif not age or not age.isdigit() or not (1 <= int(age) <= 18):
@@ -92,10 +120,8 @@ with tab2:
         elif not focus_areas:
             st.error("Please select at least one focus area.")
         else:
-            st.session_state.creating_profile = True
             success, msg = create_child_profile(user_id, name, int(age), focus_areas)
             if success:
-                # Get the newly created child to set as selected
                 children_updated = get_user_children(user_id)
                 for c in children_updated:
                     if c["name"] == name:
@@ -103,8 +129,6 @@ with tab2:
                         break
                 st.session_state.child_just_created = True
                 st.session_state.child_just_created_name = name
-                st.session_state.creating_profile = False
                 st.switch_page("pages/3_Child_Profile.py")
             else:
-                st.session_state.creating_profile = False
                 st.error(msg)
