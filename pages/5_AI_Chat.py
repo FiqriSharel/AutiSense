@@ -90,7 +90,7 @@ if user_input:
 
     # Save to history and database
     st.session_state.chat_history.append({"role": "assistant", "content": response})
-    save_interaction(selected_child["child_id"], user_input, response)
+    # save_interaction(selected_child["child_id"], user_input, response)
 
 # Clear chat button
 if st.session_state.chat_history:
