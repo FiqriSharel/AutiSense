@@ -109,13 +109,43 @@ def analyse_style(messages):
 
     return {"tone": tone, "formality": formality}
 
+def _summarise_interaction(user_message, ai_response):
+    """
+    Calls Gemini to produce a short, structured summary of one interaction.
+    Stored in place of raw messages to save storage while preserving context
+    for future personalisation.
+    """
+    try:
+        summary_prompt = f"""Summarise this caregiver-AI interaction in 2 sentences maximum.
+Include only: the focus area discussed, the type of guidance given, and any child behaviour mentioned.
+Do NOT include diagnostic language, clinical opinions, or personal details.
+Write in English regardless of the original language.
+
+Caregiver message: {user_message}
+AI response: {ai_response}
+
+Summary:"""
+
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        result = model.generate_content(summary_prompt)
+        return result.text.strip()
+    except Exception:
+        # Fallback to truncation if summarisation fails — never block the main flow
+        return f"Topic: {user_message[:80]}... | Guidance: {ai_response[:80]}..."
+
 def save_interaction(child_id, user_message, ai_response):
+    """
+    Saves a summarised version of each interaction to MongoDB.
+    Uses Gemini to generate a 2-sentence structured summary instead of
+    storing raw or truncated messages, keeping storage minimal while
+    preserving enough context for future personalisation prompts.
+    """
+    summary = _summarise_interaction(user_message, ai_response)
     interactions = get_interactions_collection()
     interactions.insert_one({
         "child_id": child_id,
         "interaction_type": "guidance",
-        "user_message_summary": user_message[:100],
-        "response_summary": ai_response[:200],
+        "response_summary": summary,
         "created_at": datetime.utcnow()
     })
 
@@ -135,7 +165,7 @@ def _build_prompt(child, user_message, style_profile):
 
     if recent_interactions:
         interaction_context = "\n".join([
-            f"- {i['user_message_summary']}"
+            f"- {i['response_summary']}"
             for i in recent_interactions
         ])
         prompt += f"\n\nRECENT CONVERSATION TOPICS:\n{interaction_context}\nUse this to maintain continuity and avoid repeating advice already given."
@@ -147,9 +177,12 @@ def stream_ai_response(child, user_message, chat_history, style_profile):
         prompt = _build_prompt(child, user_message, style_profile)
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt, stream=True)
+        full_response = ""
         for chunk in response:
             if chunk.text:
+                full_response += chunk.text
                 yield chunk.text
+        save_interaction(child["child_id"], user_message, full_response)
     except Exception as e:
         yield f"I'm sorry, I'm having trouble connecting right now. Please try again in a moment. If the issue persists, please refresh the page.\n\n*(Error: {str(e)})*"
 
@@ -158,6 +191,7 @@ def get_ai_response(child, user_message, chat_history, style_profile):
         prompt = _build_prompt(child, user_message, style_profile)
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
+        save_interaction(child["child_id"], user_message, response.text)
         return response.text
     except Exception as e:
         return f"I'm sorry, I'm having trouble connecting right now. Please try again in a moment. If the issue persists, please refresh the page.\n\n*(Error: {str(e)})*"
