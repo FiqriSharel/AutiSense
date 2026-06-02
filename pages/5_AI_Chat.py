@@ -2,7 +2,7 @@ import streamlit as st
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
-from ai_chat import get_ai_response, analyse_style, save_interaction
+from ai_chat import stream_ai_response, analyse_style, save_interaction
 from observations import get_child_observations
 from sidebar import render_sidebar
 
@@ -82,14 +82,12 @@ if user_input:
     observations = get_child_observations(selected_child["child_id"])
 
     with st.chat_message("assistant"):
-        with st.spinner("AutiSense is thinking..."):
-            response = get_ai_response(
-                selected_child,
-                user_input,
-                st.session_state.chat_history,
-                style_profile
-            )
-        st.markdown(response)
+        response = st.write_stream(stream_ai_response(
+            selected_child,
+            user_input,
+            st.session_state.chat_history,
+            style_profile
+        ))
 
     # Save to history and database
     st.session_state.chat_history.append({"role": "assistant", "content": response})

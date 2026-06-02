@@ -5,8 +5,8 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 from database import get_interactions_collection
 
-SYSTEM_PROMPT = """You are AutiSense, a warm and supportive AI assistant helping parents 
-and caregivers of children diagnosed with Autism Spectrum Disorder (ASD). 
+SYSTEM_PROMPT = """You are AutiSense, a warm and supportive AI assistant helping parents
+and caregivers of children diagnosed with Autism Spectrum Disorder (ASD).
 
 Your role is to:
 - Provide personalised, non-diagnostic intervention guidance
@@ -21,8 +21,20 @@ You must NEVER:
 - Use technical jargon without explanation
 - Make the caregiver feel judged or inadequate
 
-Always remind caregivers that AutiSense is a support tool, not a replacement for 
-professional intervention."""
+LANGUAGE RULE (strictly enforced):
+- Detect the language of the caregiver's message and reply in that exact same language
+- If the message is in Bahasa Melayu, respond fully in Bahasa Melayu
+- If the message is in English, respond fully in English
+- Never mix languages in a single response unless the caregiver themselves mixed them
+
+RESPONSE LENGTH RULES (strictly enforced):
+- Keep every response between 150 and 250 words
+- Use 3–5 short paragraphs or a brief bullet list — never both
+- Lead with the most useful point; cut anything that repeats or restates
+- Only mention the professional-advice disclaimer when the question is clinical in nature
+
+Always remind caregivers that AutiSense is a support tool, not a replacement for
+professional intervention. Your guidance is meant to complement, not substitute, the advice of qualified therapists and medical professionals."""
 
 def build_context_prompt(child, observations, style_profile, user_message):
     focus_areas = ", ".join(child.get("focus_areas", []))
@@ -59,12 +71,13 @@ CAREGIVER MESSAGE:
 {user_message}
 
 Instructions:
-- Reference specific details from the observations above to show you understand this child's situation
-- Give practical, actionable suggestions tailored to {child_name}'s focus areas
+- Respond in the same language as the CAREGIVER MESSAGE above — Bahasa Melayu if they wrote in Malay, English if they wrote in English
+- If the caregiver's message contains a mix of languages, respond in the same mixed style
+- Answer in 3–5 sentences or a bullet list of 3 items — no longer
+- Reference one specific detail from the observations to show personalisation
+- Give one or two practical, actionable suggestions tailored to {child_name}'s focus areas
 - Match the caregiver's detected tone and formality
-- Be warm, encouraging and non-judgmental
-- Never provide diagnostic conclusions or replace professional advice
-- Keep response concise and easy to read"""
+- Never provide diagnostic conclusions or replace professional advice"""
 
     return prompt
 
@@ -106,37 +119,45 @@ def save_interaction(child_id, user_message, ai_response):
         "created_at": datetime.utcnow()
     })
 
+def _build_prompt(child, user_message, style_profile):
+    import streamlit as st
+    from observations import get_child_observations
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
+    observations = get_child_observations(child["child_id"], limit=5)
+    recent_interactions = list(get_interactions_collection().find(
+        {"child_id": child["child_id"]},
+        sort=[("created_at", -1)],
+        limit=3
+    ))
+
+    prompt = build_context_prompt(child, observations, style_profile, user_message)
+
+    if recent_interactions:
+        interaction_context = "\n".join([
+            f"- {i['user_message_summary']}"
+            for i in recent_interactions
+        ])
+        prompt += f"\n\nRECENT CONVERSATION TOPICS:\n{interaction_context}\nUse this to maintain continuity and avoid repeating advice already given."
+
+    return prompt
+
+def stream_ai_response(child, user_message, chat_history, style_profile):
+    try:
+        prompt = _build_prompt(child, user_message, style_profile)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt, stream=True)
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+    except Exception as e:
+        yield f"I'm sorry, I'm having trouble connecting right now. Please try again in a moment. If the issue persists, please refresh the page.\n\n*(Error: {str(e)})*"
+
 def get_ai_response(child, user_message, chat_history, style_profile):
     try:
-        import streamlit as st
-        from observations import get_child_observations
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-
-        # Fetch real observations
-        observations = get_child_observations(child["child_id"], limit=5)
-
-        # Fetch recent interaction summaries
-        recent_interactions = list(get_interactions_collection().find(
-            {"child_id": child["child_id"]},
-            sort=[("created_at", -1)],
-            limit=3
-        ))
-
-        # Build contextual prompt
-        prompt = build_context_prompt(child, observations, style_profile, user_message)
-
-        # Add recent interaction context
-        if recent_interactions:
-            interaction_context = "\n".join([
-                f"- {i['user_message_summary']}"
-                for i in recent_interactions
-            ])
-            prompt += f"\n\nRECENT CONVERSATION TOPICS:\n{interaction_context}\nUse this to maintain continuity and avoid repeating advice already given."
-
+        prompt = _build_prompt(child, user_message, style_profile)
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
         return response.text
-
     except Exception as e:
-        # Show a friendly error message instead of crashing
         return f"I'm sorry, I'm having trouble connecting right now. Please try again in a moment. If the issue persists, please refresh the page.\n\n*(Error: {str(e)})*"
