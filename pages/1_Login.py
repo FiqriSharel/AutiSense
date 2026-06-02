@@ -28,7 +28,7 @@ st.markdown("""
 
 # Redirect if already logged in
 if "user" in st.session_state and st.session_state.user:
-    st.switch_page("pages/2_Home.py")
+    st.switch_page("pages/3_Child_Profile.py")
 
 st.markdown("<h1 style='text-align:center; color:#2D7D6F;'>AutiSense</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center; color:#555;'>Personalised ASD Intervention Support</p>", unsafe_allow_html=True)
@@ -49,7 +49,7 @@ with tab1:
             if success:
                 st.session_state.user = result
                 st.success("Logged in successfully!")
-                st.switch_page("pages/2_Home.py")
+                st.switch_page("pages/3_Child_Profile.py")
             else:
                 st.error(result)
 
