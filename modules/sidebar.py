@@ -103,9 +103,13 @@ def render_sidebar(user):
         """, unsafe_allow_html=True)
 
         # Nav items
-        for icon, label, page in NAV_ITEMS:
-            if st.button(f"{icon}  {label}", use_container_width=True, key=f"nav_{label}"):
-                st.switch_page(page)
+        if user.get("role") == "admin":
+            if st.button("⚙️  Admin Panel", use_container_width=True, key="nav_Admin"):
+                st.switch_page("pages/7_Admin_Home.py")
+        else:
+            for icon, label, page in NAV_ITEMS:
+                if st.button(f"{icon}  {label}", use_container_width=True, key=f"nav_{label}"):
+                    st.switch_page(page)
 
         # Divider before logout
         st.markdown("""

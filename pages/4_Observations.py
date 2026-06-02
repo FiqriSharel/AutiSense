@@ -10,10 +10,13 @@ st.set_page_config(page_title="AutiSense - Observations", page_icon="🌿", layo
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
+user = st.session_state.user
+
+if user.get("role") == "admin":
+    st.switch_page("pages/7_Admin_Home.py")
+
 if not st.session_state.get("selected_child"):
     st.switch_page("pages/3_Child_Profile.py")
-
-user = st.session_state.user
 selected_child = st.session_state.selected_child
 render_sidebar(user)
 

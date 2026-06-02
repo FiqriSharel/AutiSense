@@ -11,6 +11,10 @@ if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
 user = st.session_state.user
+
+if user.get("role") == "admin":
+    st.switch_page("pages/7_Admin_Home.py")
+
 user_id = user["user_id"]
 render_sidebar(user)
 

@@ -28,7 +28,9 @@ st.markdown("""
 
 # Redirect if already logged in
 if "user" in st.session_state and st.session_state.user:
-    if st.session_state.get("selected_child"):
+    if st.session_state.user.get("role") == "admin":
+        st.switch_page("pages/7_Admin_Home.py")
+    elif st.session_state.get("selected_child"):
         st.switch_page("pages/2_Home.py")
     else:
         st.switch_page("pages/3_Child_Profile.py")
@@ -52,7 +54,10 @@ with tab1:
             if success:
                 st.session_state.user = result
                 st.success("Logged in successfully!")
-                st.switch_page("pages/3_Child_Profile.py")
+                if result.get("role") == "admin":
+                    st.switch_page("pages/7_Admin_Home.py")
+                else:
+                    st.switch_page("pages/3_Child_Profile.py")
             else:
                 st.error(result)
 
@@ -64,8 +69,8 @@ with tab2:
 
     st.markdown("""
         <small style='color:#888;'>
-        By registering, you agree that AutiSense is a <b>support tool only</b> 
-        and not a diagnostic system. Your data will be stored securely and used 
+        By registering, you agree that AutiSense is a <b>support tool only</b>
+        and not a diagnostic system. Your data will be stored securely and used
         only to personalise your experience.
         </small>
     """, unsafe_allow_html=True)

@@ -6,11 +6,14 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 from database import get_users_collection
 
+
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
+
 def verify_password(password, hashed):
     return bcrypt.checkpw(password.encode('utf-8'), hashed)
+
 
 def register_user(email, password):
     users = get_users_collection()
@@ -26,11 +29,24 @@ def register_user(email, password):
     users.insert_one(user)
     return True, "Account created successfully!"
 
+
 def login_user(email, password):
+    import streamlit as st
+
+    # Hardcoded admin account — checked before the database
+    if email == st.secrets.get("ADMIN_EMAIL", "") and password == st.secrets.get("ADMIN_PASSWORD", ""):
+        return True, {
+            "user_id": "admin",
+            "email": email,
+            "role": "admin"
+        }
+
     users = get_users_collection()
     user = users.find_one({"email": email})
     if not user:
         return False, "No account found with this email."
     if not verify_password(password, user["password_hash"]):
         return False, "Incorrect password."
+    if not user.get("is_active", True):
+        return False, "Your account has been deactivated. Please contact the administrator."
     return True, user

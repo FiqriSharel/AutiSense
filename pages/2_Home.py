@@ -9,10 +9,13 @@ st.set_page_config(page_title="AutiSense - Home", page_icon="🌿", layout="wide
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
 
+user = st.session_state.user
+
+if user.get("role") == "admin":
+    st.switch_page("pages/7_Admin_Home.py")
+
 if not st.session_state.get("selected_child"):
     st.switch_page("pages/3_Child_Profile.py")
-
-user = st.session_state.user
 render_sidebar(user)
 
 # Toast when arriving from child selection
