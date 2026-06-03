@@ -164,11 +164,11 @@ def _build_prompt(child, user_message, style_profile):
     from observations import get_child_observations
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-    observations = get_child_observations(child["child_id"], limit=5)
+    observations = get_child_observations(child["child_id"], limit=20)
     recent_interactions = list(get_interactions_collection().find(
         {"child_id": child["child_id"]},
         sort=[("created_at", -1)],
-        limit=3
+        limit=10
     ))
 
     prompt = build_context_prompt(child, observations, style_profile, user_message)
