@@ -111,41 +111,51 @@ def analyse_style(messages):
 
 def _summarise_interaction(user_message, ai_response):
     """
-    Calls Gemini to produce a short, structured summary of one interaction.
-    Stored in place of raw messages to save storage while preserving context
-    for future personalisation.
+    Calls Gemini once to produce separate 1-sentence summaries for the
+    caregiver's message and the AI's response.
+    Returns a dict: {"user_message_summary": ..., "response_summary": ...}
     """
     try:
-        summary_prompt = f"""Summarise this caregiver-AI interaction in 2 sentences maximum.
-Include only: the focus area discussed, the type of guidance given, and any child behaviour mentioned.
-Do NOT include diagnostic language, clinical opinions, or personal details.
+        summary_prompt = f"""Summarise the caregiver's message and the AI response separately, each in 1 sentence.
 Write in English regardless of the original language.
+Do NOT include diagnostic language, clinical opinions, or personal details.
+Return exactly two lines in this format (no extra text):
+USER: <1-sentence summary of what the caregiver asked or described>
+AI: <1-sentence summary of the guidance or suggestion the AI gave>
 
 Caregiver message: {user_message}
-AI response: {ai_response}
-
-Summary:"""
+AI response: {ai_response}"""
 
         model = genai.GenerativeModel("gemini-2.5-flash")
         result = model.generate_content(summary_prompt)
-        return result.text.strip()
+        text = result.text.strip()
+
+        user_summary = ""
+        ai_summary = ""
+        for line in text.splitlines():
+            if line.startswith("USER:"):
+                user_summary = line[len("USER:"):].strip()
+            elif line.startswith("AI:"):
+                ai_summary = line[len("AI:"):].strip()
+
+        return {
+            "user_message_summary": user_summary or user_message[:120],
+            "response_summary": ai_summary or ai_response[:120],
+        }
     except Exception:
-        # Fallback to truncation if summarisation fails — never block the main flow
-        return f"Topic: {user_message[:80]}... | Guidance: {ai_response[:80]}..."
+        return {
+            "user_message_summary": user_message[:120],
+            "response_summary": ai_response[:120],
+        }
 
 def save_interaction(child_id, user_message, ai_response):
-    """
-    Saves a summarised version of each interaction to MongoDB.
-    Uses Gemini to generate a 2-sentence structured summary instead of
-    storing raw or truncated messages, keeping storage minimal while
-    preserving enough context for future personalisation prompts.
-    """
-    summary = _summarise_interaction(user_message, ai_response)
+    summaries = _summarise_interaction(user_message, ai_response)
     interactions = get_interactions_collection()
     interactions.insert_one({
         "child_id": child_id,
         "interaction_type": "guidance",
-        "response_summary": summary,
+        "user_message_summary": summaries["user_message_summary"],
+        "response_summary": summaries["response_summary"],
         "created_at": datetime.utcnow()
     })
 
@@ -165,7 +175,7 @@ def _build_prompt(child, user_message, style_profile):
 
     if recent_interactions:
         interaction_context = "\n".join([
-            f"- {i['response_summary']}"
+            f"- Caregiver asked: {i.get('user_message_summary', '—')} | Guidance given: {i.get('response_summary', '—')}"
             for i in recent_interactions
         ])
         prompt += f"\n\nRECENT CONVERSATION TOPICS:\n{interaction_context}\nUse this to maintain continuity and avoid repeating advice already given."
