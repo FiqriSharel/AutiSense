@@ -99,7 +99,7 @@ with tab1:
 with tab2:
     st.markdown("### Add a new child profile")
 
-    with st.form("new_child_form", clear_on_submit=True):
+    with st.form("new_child_form", clear_on_submit=False):
         name = st.text_input("Child's name")
         age = st.text_input("Child's age", placeholder="e.g. 7")
         focus_areas = st.multiselect(
