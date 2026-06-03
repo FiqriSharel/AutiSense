@@ -21,6 +21,24 @@ if not st.session_state.get("selected_child"):
 selected_child = st.session_state.selected_child
 render_sidebar(user)
 
+st.markdown("""
+<style>
+.loading-dots span {
+    animation: ld-blink 1.2s infinite;
+    animation-fill-mode: both;
+    font-size: 1.4rem;
+    color: #6b7280;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ld-blink {
+    0%   { opacity: 0.15; }
+    30%  { opacity: 1; }
+    100% { opacity: 0.15; }
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.markdown("<h2 style='color:#2D7D6F;'>AI Chat</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#555;'>Get personalised intervention guidance for your child.</p>", unsafe_allow_html=True)
 
@@ -81,12 +99,24 @@ if user_input:
     observations = get_child_observations(selected_child["child_id"])
 
     with st.chat_message("assistant"):
-        response = st.write_stream(stream_ai_response(
-            selected_child,
-            user_input,
-            st.session_state.chat_history,
-            style_profile
-        ))
+        loading = st.empty()
+        loading.markdown(
+            '<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>',
+            unsafe_allow_html=True
+        )
+
+        def _stream_with_clear():
+            first = True
+            for chunk in stream_ai_response(
+                selected_child, user_input,
+                st.session_state.chat_history, style_profile
+            ):
+                if first:
+                    loading.empty()
+                    first = False
+                yield chunk
+
+        response = st.write_stream(_stream_with_clear())
 
     # Save to history and database
     st.session_state.chat_history.append({"role": "assistant", "content": response})
