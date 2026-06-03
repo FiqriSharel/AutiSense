@@ -3,7 +3,6 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from auth import login_user, register_user
-
 st.set_page_config(
     page_title="AutiSense - Login",
     page_icon="🌿",
@@ -13,6 +12,8 @@ st.set_page_config(
 # Custom styling
 st.markdown("""
     <style>
+    [data-testid="stSidebar"] { display: none; }
+    [data-testid="collapsedControl"] { display: none; }
     .main { background-color: #f0f7f4; }
     .stButton > button {
         background-color: #2D7D6F;
