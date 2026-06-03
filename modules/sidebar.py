@@ -1,11 +1,11 @@
 import streamlit as st
 
 NAV_ITEMS = [
-    ("🏠", "Home", "pages/2_Home.py"),
-    ("👤", "Child Profile", "pages/3_Child_Profile.py"),
-    ("📋", "Observations", "pages/4_Observations.py"),
-    ("💬", "AI Chat", "pages/5_AI_Chat.py"),
-    ("📈", "Progress", "pages/6_Progress.py"),
+    ("Home", "pages/2_Home.py"),
+    ("Child Profile", "pages/3_Child_Profile.py"),
+    ("Observations", "pages/4_Observations.py"),
+    ("AI Chat", "pages/5_AI_Chat.py"),
+    ("Progress", "pages/6_Progress.py"),
 ]
 
 SIDEBAR_CSS = """
@@ -19,7 +19,7 @@ section[data-testid="stSidebar"] > div:first-child {
 [data-testid="stSidebar"] .stButton > button {
     background: transparent;
     border: 1px solid transparent;
-    color: #374151;
+    color: #b8bec8;
     text-align: left;
     padding: 0.55rem 0.9rem;
     border-radius: 10px;
@@ -34,7 +34,7 @@ section[data-testid="stSidebar"] > div:first-child {
 [data-testid="stSidebar"] .stButton > button:hover {
     background: #e8f4f2;
     border-color: #c0e4de;
-    color: #2D7D6F;
+    color: #1f4f46;
     box-shadow: none !important;
 }
 
@@ -104,11 +104,11 @@ def render_sidebar(user):
 
         # Nav items
         if user.get("role") == "admin":
-            if st.button("⚙️  Admin Panel", use_container_width=True, key="nav_Admin"):
+            if st.button("Admin Panel", use_container_width=True, key="nav_Admin"):
                 st.switch_page("pages/7_Admin_Home.py")
         else:
-            for icon, label, page in NAV_ITEMS:
-                if st.button(f"{icon}  {label}", use_container_width=True, key=f"nav_{label}"):
+            for label, page in NAV_ITEMS:
+                if st.button(label, use_container_width=True, key=f"nav_{label}"):
                     st.switch_page(page)
 
         # Divider before logout
@@ -119,6 +119,6 @@ def render_sidebar(user):
 
         # Logout (styled red via the marker trick)
         st.markdown('<span id="logout-marker"></span>', unsafe_allow_html=True)
-        if st.button("🚪  Logout", use_container_width=True, key="nav_logout"):
+        if st.button("Logout", use_container_width=True, key="nav_logout"):
             st.session_state.user = None
             st.switch_page("pages/1_Login.py")
