@@ -5,25 +5,40 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 from database import get_observations_collection, get_progress_collection
 
-def submit_observation(child_id, observation_text):
+
+def submit_observation(child_id, focus_area, observation_text):
     observations = get_observations_collection()
 
-    # Prevent duplicate submission in same session window (same day, same focus)
+    # An observation is only valid when no observation for the same focus area
+    # was already recorded within the same calendar day (UTC session window).
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    existing_today = observations.find_one({
+    duplicate = observations.find_one({
         "child_id": child_id,
+        "focus_area": focus_area,
         "submitted_at": {"$gte": today}
     })
+    is_valid = duplicate is None
 
     obs = {
         "obs_id": str(uuid.uuid4()),
         "child_id": child_id,
+        "focus_area": focus_area,
         "observation_text": observation_text,
-        "submitted_at": datetime.utcnow()
+        "submitted_at": datetime.utcnow(),
+        "is_valid": is_valid
     }
     observations.insert_one(obs)
     update_progress_score(child_id)
-    return True, "Observation saved successfully!"
+
+    if is_valid:
+        msg = "Observation saved successfully!"
+    else:
+        msg = (
+            f"Observation saved, but not counted toward progress — "
+            f"a {focus_area} observation was already recorded today."
+        )
+    return True, is_valid, msg
+
 
 def get_child_observations(child_id, limit=10):
     observations = get_observations_collection()
@@ -33,26 +48,38 @@ def get_child_observations(child_id, limit=10):
         limit=limit
     ))
 
+
 def update_progress_score(child_id):
     observations = get_observations_collection()
     progress = get_progress_collection()
 
-    # Count valid observations (max 20)
-    total_obs = observations.count_documents({"child_id": child_id})
-    valid_obs = min(total_obs, 20)
+    # Valid observations are cumulative and capped at 20.
+    # is_valid: {"$ne": False} treats both True and legacy documents (no field) as valid.
+    total_valid = observations.count_documents({
+        "child_id": child_id,
+        "is_valid": {"$ne": False}
+    })
+    valid_obs = min(total_valid, 20)
 
-    # Count active weeks (weeks with at least one observation, max 12)
-    all_obs = list(observations.find({"child_id": child_id}))
+    # Active weeks use a rolling 12-week recency window so the score reflects
+    # recent engagement rather than a permanent historical peak.
+    recency_cutoff = datetime.utcnow() - timedelta(weeks=12)
+    recent_valid = observations.find({
+        "child_id": child_id,
+        "is_valid": {"$ne": False},
+        "submitted_at": {"$gte": recency_cutoff}
+    })
+
     weeks = set()
-    for obs in all_obs:
-        week = obs["submitted_at"].isocalendar()[:2]  # (year, week)
+    for obs in recent_valid:
+        week = obs["submitted_at"].isocalendar()[:2]  # (ISO year, ISO week number)
         weeks.add(week)
+
     active_weeks = min(len(weeks), 12)
 
-    # Scoring formula from thesis
-    score = (valid_obs * 2) + (active_weeks * 5)
+    # Composite score: max 40 pts from observations + max 60 pts from weeks, capped at 100.
+    score = min((valid_obs * 2) + (active_weeks * 5), 100)
 
-    # Classify
     if score >= 70:
         level = "High"
     elif score >= 40:
@@ -60,27 +87,29 @@ def update_progress_score(child_id):
     else:
         level = "Low"
 
-    # Upsert progress record
     progress.update_one(
         {"child_id": child_id},
-        {"$set": {
-            "child_id": child_id,
-            "composite_score": score,
-            "progress_level": level,
-            "valid_observations": valid_obs,
-            "active_weeks": active_weeks,
-            "last_update": datetime.utcnow()
-        },
-        "$push": {
-            "score_history": {
-                "score": score,
-                "level": level,
-                "recorded_at": datetime.utcnow()
+        {
+            "$set": {
+                "child_id": child_id,
+                "composite_score": score,
+                "progress_level": level,
+                "valid_observations": valid_obs,
+                "active_weeks": active_weeks,
+                "last_update": datetime.utcnow()
+            },
+            "$push": {
+                "score_history": {
+                    "score": score,
+                    "level": level,
+                    "recorded_at": datetime.utcnow()
+                }
             }
-        }},
+        },
         upsert=True
     )
     return score, level
+
 
 def get_progress_record(child_id):
     progress = get_progress_collection()
