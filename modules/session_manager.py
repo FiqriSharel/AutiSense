@@ -24,7 +24,7 @@ def _cm():
     except Exception:
         run_id = None
 
-    if st.session_state.get("_cm_run_id") != run_id:
+    if st.session_state.get("_cm_run_id") != run_id or "_cm_instance" not in st.session_state:
         st.session_state._cm_run_id = run_id
         st.session_state._cm_instance = stx.CookieManager(key="autisense_cm")
 
