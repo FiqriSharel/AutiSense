@@ -1,4 +1,8 @@
 import streamlit as st
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+from session_manager import clear_session
 
 NAV_ITEMS = [
     ("Home", "pages/2_Home.py"),
@@ -120,5 +124,5 @@ def render_sidebar(user):
         # Logout (styled red via the marker trick)
         st.markdown('<span id="logout-marker"></span>', unsafe_allow_html=True)
         if st.button("Logout", use_container_width=True, key="nav_logout"):
-            st.session_state.user = None
+            clear_session()
             st.switch_page("pages/1_Login.py")

@@ -4,8 +4,11 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from sidebar import render_sidebar
 from database import get_users_collection
+from session_manager import init_session
 
 st.set_page_config(page_title="AutiSense - Manage Users", page_icon="🌿", layout="wide")
+
+init_session()
 
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")

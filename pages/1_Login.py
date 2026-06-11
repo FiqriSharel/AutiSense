@@ -3,11 +3,14 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from auth import login_user, register_user
+from session_manager import init_session, set_session
 st.set_page_config(
     page_title="AutiSense - Login",
     page_icon="🌿",
     layout="centered"
 )
+
+init_session()
 
 # Custom styling
 st.markdown("""
@@ -54,6 +57,7 @@ with tab1:
             success, result = login_user(email, password)
             if success:
                 st.session_state.user = result
+                set_session(result)
                 st.success("Logged in successfully!")
                 if result.get("role") == "admin":
                     st.switch_page("pages/7_Admin_Home.py")

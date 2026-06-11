@@ -4,12 +4,15 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from observations import get_progress_record, get_child_observations
 from sidebar import render_sidebar
+from session_manager import init_session
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 from datetime import datetime
 
 st.set_page_config(page_title="AutiSense - Progress", page_icon="🌿", layout="wide")
+
+init_session()
 
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
