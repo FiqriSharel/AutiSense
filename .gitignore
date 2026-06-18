@@ -1,4 +1,5 @@
 .streamlit/secrets.toml
+seed_admin.py
 venv/
 __pycache__/
 *.pyc
