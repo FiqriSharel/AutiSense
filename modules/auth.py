@@ -31,16 +31,6 @@ def register_user(email, password):
 
 
 def login_user(email, password):
-    import streamlit as st
-
-    # Hardcoded admin account — checked before the database
-    if email == st.secrets.get("ADMIN_EMAIL", "") and password == st.secrets.get("ADMIN_PASSWORD", ""):
-        return True, {
-            "user_id": "admin",
-            "email": email,
-            "role": "admin"
-        }
-
     users = get_users_collection()
     user = users.find_one({"email": email})
     if not user:
