@@ -58,17 +58,18 @@ def update_progress_score(child_id):
         "child_id": child_id,
         "is_valid": {"$ne": False}
     })
-    # valid_obs is the score-capped value; total_observations is the raw count for display.
-    valid_obs = min(total_observations, 20)
 
-    # Active weeks use a rolling 12-week recency window so the score reflects
-    # recent engagement rather than a permanent historical peak.
+    # Both the observation score component and active-weeks use the same 12-week window.
     recency_cutoff = datetime.utcnow() - timedelta(weeks=12)
-    recent_valid = observations.find({
+    recent_valid = list(observations.find({
         "child_id": child_id,
         "is_valid": {"$ne": False},
         "submitted_at": {"$gte": recency_cutoff}
-    })
+    }))
+
+    recent_observations = len(recent_valid)
+    # Score uses only observations within the recency window, capped at 20.
+    valid_obs = min(recent_observations, 20)
 
     weeks = set()
     for obs in recent_valid:
@@ -96,6 +97,7 @@ def update_progress_score(child_id):
                 "progress_level": level,
                 "valid_observations": valid_obs,
                 "total_observations": total_observations,
+                "recent_observations": recent_observations,
                 "active_weeks": active_weeks,
                 "last_update": datetime.utcnow()
             },

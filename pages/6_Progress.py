@@ -45,6 +45,7 @@ level = record.get("progress_level", "Low")
 score = record.get("composite_score", 0)
 valid_obs = record.get("valid_observations", 0)
 total_observations = record.get("total_observations", valid_obs)
+recent_observations = record.get("recent_observations", valid_obs)
 active_weeks = record.get("active_weeks", 0)
 
 badge_colors = {
@@ -55,7 +56,7 @@ badge_colors = {
 bg, fg, interpretation = badge_colors[level]
 
 # Summary cards
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown(f"""
         <div style='background:{bg}; padding:1.5rem; border-radius:12px; text-align:center;'>
@@ -73,6 +74,14 @@ with col2:
     """, unsafe_allow_html=True)
 
 with col3:
+    st.markdown(f"""
+        <div style='background:#E8F5F2; padding:1.5rem; border-radius:12px; text-align:center;'>
+            <h2 style='color:#2D7D6F; margin:0;'>{recent_observations}</h2>
+            <p style='color:#555; margin:0; font-size:0.85rem;'>Observations (last 12 weeks)</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col4:
     st.markdown(f"""
         <div style='background:#E8F5F2; padding:1.5rem; border-radius:12px; text-align:center;'>
             <h2 style='color:#2D7D6F; margin:0;'>{active_weeks}</h2>
