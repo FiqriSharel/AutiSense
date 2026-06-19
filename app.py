@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(
     page_title="AutiSense",
-    page_icon="🌿",
+    page_icon=None,
     layout="centered"
 )
 
