@@ -9,7 +9,7 @@ import matplotlib.patches as mpatches
 import numpy as np
 from datetime import datetime
 
-st.set_page_config(page_title="AutiSense - Progress", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="AutiSense - Engagement", page_icon=None, layout="wide")
 
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
@@ -24,11 +24,11 @@ if not st.session_state.get("selected_child"):
 selected_child = st.session_state.selected_child
 render_sidebar(user)
 
-st.markdown("<h2 style='color:#2D7D6F;'>Progress Dashboard</h2>", unsafe_allow_html=True)
-st.markdown("<p style='color:#555;'>Track your child's engagement and progress over time.</p>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#2D7D6F;'>Engagement Dashboard</h2>", unsafe_allow_html=True)
+st.markdown("<p style='color:#555;'>Track your engagement with your child's development over time.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-st.markdown(f"### Progress for: **{selected_child['name']}**")
+st.markdown(f"### Engagement for: **{selected_child['name']}**")
 st.markdown(f"**Age:** {selected_child['age']}  |  **Focus areas:** {', '.join(selected_child['focus_areas'])}")
 st.markdown("---")
 
@@ -59,7 +59,7 @@ with col1:
     st.markdown(f"""
         <div style='background:{bg}; padding:1.5rem; border-radius:12px; text-align:center;'>
             <h2 style='color:{fg}; margin:0;'>{level}</h2>
-            <p style='color:{fg}; margin:0; font-size:0.85rem;'>Current Progress Level</p>
+            <p style='color:{fg}; margin:0; font-size:0.85rem;'>Engagement Level</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -67,7 +67,7 @@ with col2:
     st.markdown(f"""
         <div style='background:#E8F5F2; padding:1.5rem; border-radius:12px; text-align:center;'>
             <h2 style='color:#2D7D6F; margin:0;'>{valid_obs}</h2>
-            <p style='color:#555; margin:0; font-size:0.85rem;'>Observations Recorded</p>
+            <p style='color:#555; margin:0; font-size:0.85rem;'>Total Observations</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -75,7 +75,7 @@ with col3:
     st.markdown(f"""
         <div style='background:#E8F5F2; padding:1.5rem; border-radius:12px; text-align:center;'>
             <h2 style='color:#2D7D6F; margin:0;'>{active_weeks}</h2>
-            <p style='color:#555; margin:0; font-size:0.85rem;'>Active Weeks</p>
+            <p style='color:#555; margin:0; font-size:0.85rem;'>Active Weeks (last 12 weeks)</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -88,7 +88,7 @@ score_history = record.get("score_history", [])
 if len(score_history) < 2:
     st.info("Keep submitting observations to see your progress graph grow!")
 else:
-    st.markdown("### Progress Over Time")
+    st.markdown("### Engagement Over Time")
     st.markdown("<small style='color:#888;'>The graph shows your child's engagement level over time based on observations submitted.</small>", unsafe_allow_html=True)
 
     dates = [entry["recorded_at"] for entry in score_history]
@@ -144,12 +144,12 @@ st.markdown("---")
 
 # Intervention suggestions via AI Chat
 st.markdown("### Get Personalised Activity Suggestions")
-st.markdown("<p style='color:#555;'>Based on your child's current progress level, AutiSense can suggest personalised activities tailored to their focus areas.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color:#555;'>Based on your current engagement level, AutiSense can suggest personalised activities tailored to your child's focus areas.</p>", unsafe_allow_html=True)
 
 focus_areas = selected_child.get("focus_areas", [])
 child_name = selected_child.get("name", "your child")
 
-suggestion_prompt = f"Based on {child_name}'s current progress level of {level} and their focus areas of {', '.join(focus_areas)}, what are some specific activities I can do at home this week to help them improve?"
+suggestion_prompt = f"Based on my current engagement level of {level} and {child_name}'s focus areas of {', '.join(focus_areas)}, what are some specific activities I can do at home this week to support their development?"
 
 col1, col2 = st.columns([2, 1])
 with col1:
