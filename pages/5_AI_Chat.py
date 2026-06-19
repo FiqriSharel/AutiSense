@@ -53,22 +53,65 @@ st.markdown("---")
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Starter suggestions for new users
+# Allow starter buttons to wrap text and grow in height naturally
+st.markdown("""
+<style>
+div[data-testid="stHorizontalBlock"] .stButton > button {
+    white-space: normal !important;
+    height: auto !important;
+    min-height: 3rem;
+    line-height: 1.4;
+}
+</style>
+""", unsafe_allow_html=True)
+
+def _trim_to_sentence(text, max_chars=120):
+    """Return a clean summary: first sentence if short enough, else trim at word boundary."""
+    first_sentence_end = text.find('. ')
+    if 0 < first_sentence_end <= max_chars:
+        return text[:first_sentence_end + 1]
+    if len(text) <= max_chars:
+        return text
+    trimmed = text[:max_chars]
+    last_space = trimmed.rfind(' ')
+    return (trimmed[:last_space] if last_space > 0 else trimmed) + '...'
+
+# Starter suggestions — static if fewer than 4 observations, observation-based otherwise
 if not st.session_state.chat_history:
+    past_obs = get_child_observations(selected_child["child_id"], limit=50)
+
     st.markdown("#### Not sure where to start? Try one of these:")
     col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("How can I improve communication at home?", use_container_width=True):
-            st.session_state.starter_message = "How can I improve communication at home?"
-            st.rerun()
-    with col2:
-        if st.button("My child had a meltdown today. What should I do?", use_container_width=True):
-            st.session_state.starter_message = "My child had a meltdown today. What should I do?"
-            st.rerun()
-    with col3:
-        if st.button("What activities help with social skills?", use_container_width=True):
-            st.session_state.starter_message = "What activities help with social skills?"
-            st.rerun()
+
+    if len(past_obs) > 3:
+        recent_three = past_obs[:3]
+        for col, obs in zip([col1, col2, col3], recent_three):
+            area = obs.get("focus_area", "Observation")
+            summary = _trim_to_sentence(obs["observation_text"])
+            label = f"{area}: {summary}"
+            full_prompt = (
+                f"I recently observed that {selected_child['name']} "
+                f"{obs['observation_text']} "
+                f"What activities or strategies can I use at home to support them?"
+            )
+            with col:
+                if st.button(label, use_container_width=True, key=f"starter_{obs['obs_id']}"):
+                    st.session_state.starter_message = full_prompt
+                    st.rerun()
+    else:
+        with col1:
+            if st.button("How can I improve communication at home?", use_container_width=True):
+                st.session_state.starter_message = "How can I improve communication at home?"
+                st.rerun()
+        with col2:
+            if st.button("My child had a meltdown today. What should I do?", use_container_width=True):
+                st.session_state.starter_message = "My child had a meltdown today. What should I do?"
+                st.rerun()
+        with col3:
+            if st.button("What activities help with social skills?", use_container_width=True):
+                st.session_state.starter_message = "What activities help with social skills?"
+                st.rerun()
+
     st.markdown("---")
 
 # Display existing chat history
