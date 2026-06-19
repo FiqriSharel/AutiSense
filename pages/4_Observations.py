@@ -53,7 +53,7 @@ focus_areas = selected_child.get("focus_areas", [])
 st.markdown("#### What did you observe today?")
 st.markdown(
     "<small style='color:#888;'>Select the relevant focus area, then describe your child's behaviour, "
-    "interactions, or progress. A focus area may only be recorded once per day.</small>",
+    "interactions, or progress.</small>",
     unsafe_allow_html=True
 )
 
@@ -61,7 +61,7 @@ with st.form("observation_form", clear_on_submit=True):
     focus_area = st.selectbox(
         "Focus Area",
         options=focus_areas,
-        help="Select the area this observation relates to. Each focus area can be recorded once per day."
+        help="Select the area this observation relates to."
     )
     observation_text = st.text_area(
         "Observation",
@@ -93,11 +93,18 @@ if submitted:
 st.markdown("---")
 st.markdown("#### Past Observations")
 
-observations = get_child_observations(selected_child["child_id"])
+if "obs_display_limit" not in st.session_state:
+    st.session_state.obs_display_limit = 10
+
+observations = get_child_observations(selected_child["child_id"], limit=st.session_state.obs_display_limit + 1)
+
 if not observations:
     st.info("No observations recorded yet.")
 else:
-    for obs in observations:
+    has_more = len(observations) > st.session_state.obs_display_limit
+    visible = observations[:st.session_state.obs_display_limit]
+
+    for obs in visible:
         with st.container():
             col_date, col_tag = st.columns([3, 1])
             with col_date:
@@ -112,3 +119,8 @@ else:
                     )
             st.markdown(obs["observation_text"])
             st.markdown("---")
+
+    if has_more:
+        if st.button("Load more", use_container_width=False):
+            st.session_state.obs_display_limit += 10
+            st.rerun()
