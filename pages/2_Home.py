@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from sidebar import render_sidebar
 
-st.set_page_config(page_title="AutiSense - Home", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="AutiSense - Home", page_icon=None, layout="wide")
 
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
@@ -63,11 +63,11 @@ with col3:
 with col4:
     st.markdown("""
         <div style='background:#FEF9E8; padding:1.5rem; border-radius:12px; text-align:center; border-bottom:3px solid #D97706;'>
-            <h3 style='color:#4A2C07; margin:0 0 0.4rem 0;'>Progress</h3>
-            <p style='color:#4A5568; margin:0;'>Track your child's progress over time</p>
+            <h3 style='color:#4A2C07; margin:0 0 0.4rem 0;'>Engagement</h3>
+            <p style='color:#4A5568; margin:0;'>Track your engagement with your child's development</p>
         </div>
     """, unsafe_allow_html=True)
-    if st.button("Go to Progress", use_container_width=True):
+    if st.button("Go to Engagement", use_container_width=True):
         st.switch_page("pages/6_Progress.py")
 
 st.markdown("---")
