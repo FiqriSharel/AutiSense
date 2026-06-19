@@ -44,6 +44,7 @@ if not record:
 level = record.get("progress_level", "Low")
 score = record.get("composite_score", 0)
 valid_obs = record.get("valid_observations", 0)
+total_observations = record.get("total_observations", valid_obs)
 active_weeks = record.get("active_weeks", 0)
 
 badge_colors = {
@@ -66,7 +67,7 @@ with col1:
 with col2:
     st.markdown(f"""
         <div style='background:#E8F5F2; padding:1.5rem; border-radius:12px; text-align:center;'>
-            <h2 style='color:#2D7D6F; margin:0;'>{valid_obs}</h2>
+            <h2 style='color:#2D7D6F; margin:0;'>{total_observations}</h2>
             <p style='color:#555; margin:0; font-size:0.85rem;'>Total Observations</p>
         </div>
     """, unsafe_allow_html=True)
