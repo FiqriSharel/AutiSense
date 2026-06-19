@@ -5,14 +5,18 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 from database import get_interactions_collection
 
-SYSTEM_PROMPT = """You are AutiSense, a concise and supportive AI assistant helping parents
-and caregivers of children diagnosed with Autism Spectrum Disorder (ASD).
+SYSTEM_PROMPT = """You are AutiSense, a warm and empathetic AI companion supporting parents and caregivers of children with Autism Spectrum Disorder (ASD).
 
-Your role is to:
-- Provide personalised, non-diagnostic intervention guidance
-- Suggest practical activities based on the child's focus areas
-- Be direct, warm, and encouraging
-- Use simple, clear language
+Your personality:
+- Speak like a knowledgeable, caring friend — not a clinical report
+- Be empathetic, validating, and encouraging without being patronising
+- Adapt naturally to the caregiver's emotional state
+- Keep responses concise and conversational
+
+Your role:
+- Provide personalised, practical intervention guidance
+- Suggest home activities tailored to the child's focus areas
+- Help caregivers feel heard, supported, and capable
 
 You must NEVER:
 - Provide medical diagnoses or clinical assessments
@@ -20,33 +24,47 @@ You must NEVER:
 - Use technical jargon without explanation
 - Make the caregiver feel judged or inadequate
 
-LANGUAGE RULE (strictly enforced):
+LANGUAGE RULE:
 - Detect the language of the caregiver's message and reply in that exact same language
 - If the message is in Bahasa Melayu, respond fully in Bahasa Melayu
 - If the message is in English, respond fully in English
-- Never mix languages in a single response unless the caregiver themselves mixed them
+- Never mix languages unless the caregiver does
 
-RESPONSE FORMAT (strictly enforced — always use this exact structure, never put every bullet point under the same section):
+RESPONSE STYLE — read the context and adapt dynamically:
 
-1. Opening (1–2 sentences): A brief, warm greeting that acknowledges what the caregiver shared and names the core concern.
+If this is the FIRST message in the conversation:
+- A brief, warm acknowledgement is fine to open (1 sentence max)
+- Then ask 1–2 clarifying questions or note relevant behaviours to look out for
+- Suggest 2–4 specific, practical home activities tailored to the child's profile
+- Close with encouragement and an open invitation to continue
 
-2. Try to understand the issue better by double-checking symptoms or behaviours. This shows empathy and helps ensure your guidance is on target.
-   - 2–4 short bullets listing signs or behaviours to watch for that relate to the concern
+If the caregiver is ANSWERING a question you previously asked:
+- Do NOT greet them again — pick up naturally from their answer
+- Reflect their answer back briefly (1 sentence) to show you understood
+- Build directly on what they told you — adjust your guidance accordingly
+- Offer 2–4 refined suggestions based on the new information
+- Close warmly, keep the conversation going if appropriate
 
-3. Actions: Based on the child's focus areas and the concern, suggest specific, practical things the caregiver can try at home. Tailor these to the child's profile and the issue at hand.
-   - 2–4 short bullets with specific, practical things the caregiver can try
+If the caregiver is sharing a NEW concern mid-conversation:
+- Do NOT greet — transition naturally
+- Acknowledge the new concern with empathy (1 sentence)
+- Provide relevant guidance tailored to the concern and child's profile
+- Invite them to share more if needed
 
-4. A brief, encouraging follow-up — invite them to share how it goes or offer further help.
-
-5. Always end with a reminder that you're a support tool and not a replacement for professional advice, especially for medical concerns.
+If the caregiver is expressing FRUSTRATION, EXHAUSTION, or DISTRESS:
+- Lead with empathy — validate their feelings before any advice
+- Keep suggestions light and manageable — do not overwhelm
+- Remind them that small, consistent steps matter
+- Offer to help further without pressure
 
 Rules:
-- Never skip any of the four sections
-- Keep each bullet to 1 sentence
-- No extra prose, headers, or sections beyond this structure
-- Only add a clinical disclaimer inside the Actions section when the question is medical in nature"""
+- NEVER open with "Hi", "Hello", "Great to hear from you!", or any greeting after the first message
+- Write naturally — no visible numbered sections or rigid headers
+- Keep responses focused and appropriately brief
+- Always end with a short, unobtrusive reminder that AutiSense is a support tool, not a clinical service"""
 
-def build_context_prompt(child, observations, style_profile, user_message):
+
+def build_context_prompt(child, observations, style_profile, user_message, chat_history=None):
     focus_areas = ", ".join(child.get("focus_areas", []))
     child_name = child.get("name", "your child")
     age = child.get("age", "unknown")
@@ -62,7 +80,30 @@ def build_context_prompt(child, observations, style_profile, user_message):
     tone = style_profile.get("tone", "neutral")
     formality = style_profile.get("formality", "semi-formal")
 
+    # Determine if this is the first exchange so the AI knows whether to greet
+    prior_turns = [m for m in (chat_history or []) if m["role"] == "user"]
+    is_first_message = len(prior_turns) <= 1
+
+    # Build a readable conversation history (exclude the current message which is user_message)
+    history_text = ""
+    if chat_history and len(chat_history) > 1:
+        prior = chat_history[:-1]  # everything before the current user message
+        recent = prior[-8:]        # cap at last 4 exchanges for brevity
+        lines = []
+        for m in recent:
+            role = "Caregiver" if m["role"] == "user" else "AutiSense"
+            lines.append(f"{role}: {m['content']}")
+        history_text = "\n\n".join(lines)
+
+    conversation_status = (
+        "FIRST MESSAGE — a brief warm acknowledgement is appropriate."
+        if is_first_message
+        else "ONGOING CONVERSATION — do NOT greet. Continue naturally from where the conversation left off."
+    )
+
     prompt = f"""{SYSTEM_PROMPT}
+
+---
 
 CHILD PROFILE:
 - Name: {child_name}
@@ -75,21 +116,26 @@ RECENT CAREGIVER OBSERVATIONS (most recent first):
 COMMUNICATION STYLE DETECTED:
 - Tone: {tone}
 - Formality: {formality}
-- Please match this style naturally in your response.
+- Match this style naturally in your response.
 
-CAREGIVER MESSAGE:
+CONVERSATION STATUS: {conversation_status}
+
+{f"CONVERSATION SO FAR:{chr(10)}{history_text}" if history_text else ""}
+
+CURRENT CAREGIVER MESSAGE:
 {user_message}
 
+---
+
 Instructions:
-- Respond in the same language as the CAREGIVER MESSAGE above — Bahasa Melayu if they wrote in Malay, English if they wrote in English
-- If the caregiver's message contains a mix of languages, respond in the same mixed style
-- Follow the four-section format exactly: Opening → Double check symptoms → Actions → Closing
-- In the "Double check symptoms" bullets, reference specific details from {child_name}'s observations where possible
-- In the "Actions" bullets, tailor suggestions to {child_name}'s focus areas: {focus_areas}
-- Match the caregiver's detected tone ({tone}) and formality ({formality})
+- Respond in the same language as the CAREGIVER MESSAGE
+- Determine the message type (first message / answering a question / new concern / distress) and adapt your structure and tone accordingly
+- Reference {child_name}'s observations and focus areas ({focus_areas}) where relevant
+- Match the caregiver's tone ({tone}) and formality ({formality})
 - Never provide diagnostic conclusions or replace professional advice"""
 
     return prompt
+
 
 def analyse_style(messages):
     if not messages:
@@ -119,12 +165,8 @@ def analyse_style(messages):
 
     return {"tone": tone, "formality": formality}
 
+
 def _summarise_interaction(user_message, ai_response):
-    """
-    Calls Gemini once to produce separate 1-sentence summaries for the
-    caregiver's message and the AI's response.
-    Returns a dict: {"user_message_summary": ..., "response_summary": ...}
-    """
     try:
         summary_prompt = f"""Summarise the caregiver's message and the AI response separately, each in 1 sentence.
 Write in English regardless of the original language.
@@ -158,6 +200,7 @@ AI response: {ai_response}"""
             "response_summary": ai_response[:120],
         }
 
+
 def save_interaction(child_id, user_message, ai_response):
     summaries = _summarise_interaction(user_message, ai_response)
     interactions = get_interactions_collection()
@@ -169,7 +212,8 @@ def save_interaction(child_id, user_message, ai_response):
         "created_at": datetime.utcnow()
     })
 
-def _build_prompt(child, user_message, style_profile):
+
+def _build_prompt(child, user_message, chat_history, style_profile):
     import streamlit as st
     from observations import get_child_observations
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -181,20 +225,21 @@ def _build_prompt(child, user_message, style_profile):
         limit=10
     ))
 
-    prompt = build_context_prompt(child, observations, style_profile, user_message)
+    prompt = build_context_prompt(child, observations, style_profile, user_message, chat_history)
 
     if recent_interactions:
         interaction_context = "\n".join([
             f"- Caregiver asked: {i.get('user_message_summary', '—')} | Guidance given: {i.get('response_summary', '—')}"
             for i in recent_interactions
         ])
-        prompt += f"\n\nRECENT CONVERSATION TOPICS:\n{interaction_context}\nUse this to maintain continuity and avoid repeating advice already given."
+        prompt += f"\n\nPAST SESSION TOPICS (avoid repeating this advice):\n{interaction_context}"
 
     return prompt
 
+
 def stream_ai_response(child, user_message, chat_history, style_profile):
     try:
-        prompt = _build_prompt(child, user_message, style_profile)
+        prompt = _build_prompt(child, user_message, chat_history, style_profile)
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt, stream=True)
         full_response = ""
@@ -206,9 +251,10 @@ def stream_ai_response(child, user_message, chat_history, style_profile):
     except Exception as e:
         yield f"I'm sorry, I'm having trouble connecting right now. Please try again in a moment. If the issue persists, please refresh the page.\n\n*(Error: {str(e)})*"
 
+
 def get_ai_response(child, user_message, chat_history, style_profile):
     try:
-        prompt = _build_prompt(child, user_message, style_profile)
+        prompt = _build_prompt(child, user_message, chat_history, style_profile)
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
         save_interaction(child["child_id"], user_message, response.text)
