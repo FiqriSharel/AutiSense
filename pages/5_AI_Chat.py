@@ -6,7 +6,7 @@ from ai_chat import stream_ai_response, analyse_style, save_interaction
 from observations import get_child_observations
 from sidebar import render_sidebar
 
-st.set_page_config(page_title="AutiSense - AI Chat", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="AutiSense - AI Chat", page_icon=None, layout="wide")
 
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")

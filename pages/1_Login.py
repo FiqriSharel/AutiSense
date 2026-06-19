@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from auth import login_user, register_user
 st.set_page_config(
     page_title="AutiSense - Login",
-    page_icon="🌿",
+    page_icon=None,
     layout="centered"
 )
 

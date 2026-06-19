@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from children import create_child_profile, get_user_children, update_child_profile, delete_child_profile, FOCUS_AREAS
 from sidebar import render_sidebar
 
-st.set_page_config(page_title="AutiSense - Child Profile", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="AutiSense - Child Profile", page_icon=None, layout="wide")
 
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")

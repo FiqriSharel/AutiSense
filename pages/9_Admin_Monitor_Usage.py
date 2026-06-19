@@ -8,7 +8,7 @@ from database import (
     get_observations_collection, get_interactions_collection
 )
 
-st.set_page_config(page_title="AutiSense - System Usage", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="AutiSense - System Usage", page_icon=None, layout="wide")
 
 if "user" not in st.session_state or not st.session_state.user:
     st.switch_page("pages/1_Login.py")
