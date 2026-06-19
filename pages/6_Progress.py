@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'modules'))
 from observations import get_progress_record, get_child_observations
 from sidebar import render_sidebar
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+
 import numpy as np
 from datetime import datetime
 
@@ -104,12 +104,12 @@ else:
     dates = [entry["recorded_at"] for entry in score_history]
     scores = [entry["score"] for entry in score_history]
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(8, 4))
     fig.patch.set_facecolor("#0E1117")
     ax.set_facecolor("#0E1117")
 
     # Plot score line
-    ax.plot(dates, scores, color="#2D7D6F", linewidth=2.5, marker="o", markersize=6, zorder=3)
+    ax.plot(dates, scores, color="#2D7D6F", linewidth=1 , marker="o", markersize=3, zorder=3)
 
     # Fill areas for each band
     ax.fill_between(dates, 0, 39, alpha=0.08, color="#FFC107", label="_nolegend_")
@@ -122,11 +122,11 @@ else:
 
     # Y axis labels — only show Low, Medium, High
     ax.set_yticks([20, 55, 85])
-    ax.set_yticklabels(["Low", "Medium", "High"], color="white", fontsize=12)
+    ax.set_yticklabels(["Low", "Medium", "High"], color="white", fontsize=8)
     ax.set_ylim(0, 100)
 
     # X axis
-    ax.tick_params(axis="x", colors="white", labelsize=9)
+    ax.tick_params(axis="x", colors="white", labelsize=7)
     ax.tick_params(axis="y", colors="white")
 
     # Grid and spines
@@ -135,13 +135,6 @@ else:
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_color("#444")
     ax.spines["bottom"].set_color("#444")
-
-    # Legend patches
-    low_patch = mpatches.Patch(color="#FFC107", alpha=0.4, label="Low (0-39)")
-    med_patch = mpatches.Patch(color="#17A2B8", alpha=0.4, label="Medium (40-69)")
-    high_patch = mpatches.Patch(color="#28A745", alpha=0.4, label="High (70-100)")
-    ax.legend(handles=[low_patch, med_patch, high_patch], loc="upper left",
-              facecolor="#1E2130", edgecolor="#444", labelcolor="white", fontsize=9)
 
     plt.xticks(rotation=30, ha="right")
     plt.tight_layout()
