@@ -114,32 +114,28 @@ if not st.session_state.chat_history:
 
     st.markdown("---")
 
-# Display existing chat history
-for message in st.session_state.chat_history:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# Handle starter message
+# Collect new input before rendering so history loop handles everything in one pass
 user_input = None
 if "starter_message" in st.session_state and st.session_state.starter_message:
     user_input = st.session_state.starter_message
     st.session_state.starter_message = None
 
-# Chat input box
 prompt = st.chat_input("Ask AutiSense anything about your child...")
 if prompt:
     user_input = prompt
 
-# Process user input
+# Append new user message to history before the render loop so it appears in order
 if user_input:
-    # Show user message
     st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
 
-    # Get AI response
+# Render full history (single source of truth — no duplicate renders)
+for message in st.session_state.chat_history:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Stream AI response below history
+if user_input:
     style_profile = analyse_style(st.session_state.chat_history)
-    observations = get_child_observations(selected_child["child_id"])
 
     with st.chat_message("assistant"):
         loading = st.empty()
@@ -161,7 +157,6 @@ if user_input:
 
         response = st.write_stream(_stream_with_clear())
 
-    # Save to history and database
     st.session_state.chat_history.append({"role": "assistant", "content": response})
     # save_interaction(selected_child["child_id"], user_input, response)
 
