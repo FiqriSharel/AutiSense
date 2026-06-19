@@ -53,13 +53,13 @@ def update_progress_score(child_id):
     observations = get_observations_collection()
     progress = get_progress_collection()
 
-    # Valid observations are cumulative and capped at 20.
     # is_valid: {"$ne": False} treats both True and legacy documents (no field) as valid.
-    total_valid = observations.count_documents({
+    total_observations = observations.count_documents({
         "child_id": child_id,
         "is_valid": {"$ne": False}
     })
-    valid_obs = min(total_valid, 20)
+    # valid_obs is the score-capped value; total_observations is the raw count for display.
+    valid_obs = min(total_observations, 20)
 
     # Active weeks use a rolling 12-week recency window so the score reflects
     # recent engagement rather than a permanent historical peak.
@@ -95,6 +95,7 @@ def update_progress_score(child_id):
                 "composite_score": score,
                 "progress_level": level,
                 "valid_observations": valid_obs,
+                "total_observations": total_observations,
                 "active_weeks": active_weeks,
                 "last_update": datetime.utcnow()
             },
