@@ -5,7 +5,7 @@ NAV_ITEMS = [
     ("Child Profile", "pages/3_Child_Profile.py"),
     ("Observations", "pages/4_Observations.py"),
     ("AI Chat", "pages/5_AI_Chat.py"),
-    ("Progress", "pages/6_Progress.py"),
+    ("Engagement", "pages/6_Progress.py"),
 ]
 
 SIDEBAR_CSS = """
@@ -64,7 +64,6 @@ def render_sidebar(user):
         # Brand header
         st.markdown("""
             <div style="text-align:center; padding:1.6rem 0.5rem 1.3rem;">
-                <div style="font-size:2.4rem; line-height:1.2;">🌿</div>
                 <div style="font-size:1.3rem; font-weight:700; color:#2D7D6F;
                             margin-top:6px; letter-spacing:0.4px;">AutiSense</div>
                 <div style="font-size:0.68rem; color:#9ca3af; margin-top:3px;
