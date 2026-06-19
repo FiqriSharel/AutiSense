@@ -144,20 +144,31 @@ st.markdown("---")
 
 # Intervention suggestions via AI Chat
 st.markdown("### Get Personalised Activity Suggestions")
-st.markdown("<p style='color:#555;'>Based on your current engagement level, AutiSense can suggest personalised activities tailored to your child's focus areas.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color:#555;'>Based on your latest observation, AutiSense can suggest personalised activities tailored to your child's focus areas.</p>", unsafe_allow_html=True)
 
 focus_areas = selected_child.get("focus_areas", [])
 child_name = selected_child.get("name", "your child")
 
-suggestion_prompt = f"Based on my current engagement level of {level} and {child_name}'s focus areas of {', '.join(focus_areas)}, what are some specific activities I can do at home this week to support their development?"
+last_obs = get_child_observations(selected_child["child_id"], limit=1)
+if last_obs:
+    obs_snippet = last_obs[0]["observation_text"][:200]
+    suggestion_prompt = (
+        f"I recently observed that {child_name} {obs_snippet}. "
+        f"What are 2-3 specific activities I can do at home this week to support their development?"
+    )
+    preview_text = f'Based on your latest observation about {child_name}.'
+else:
+    suggestion_prompt = (
+        f"Based on {child_name}'s focus areas of {', '.join(focus_areas)}, "
+        f"what are 2-3 specific activities I can do at home this week to support their development?"
+    )
+    preview_text = f"Based on {child_name}'s focus areas: {', '.join(focus_areas)}."
 
 col1, col2 = st.columns([2, 1])
 with col1:
     st.markdown(f"""
         <div style='background:#E8F5F2; padding:1rem; border-radius:8px;'>
-            <p style='color:#2D7D6F; margin:0; font-size:0.9rem;'>
-            <b>Ready to ask:</b> "{suggestion_prompt[:120]}..."
-            </p>
+            <p style='color:#2D7D6F; margin:0; font-size:0.9rem;'>{preview_text}</p>
         </div>
     """, unsafe_allow_html=True)
 
